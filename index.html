@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная карта мира</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        #country-list-panel p {
+        cursor: pointer;
+        user-select: none;
+        margin: 10px 0;
+        transition: transform 0.2s ease, color 0.3s ease; /* Плавная анимация */
+        transform-origin: left center; /* Фиксируем точку масштабирования слева */
+        }
+
+        #country-list-panel p:hover {
+            transform: scale(1.1); /* Увеличение текста */
+            color: #FF6347; /* Изменение цвета текста */
+        }
+
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #map {
+            position: relative;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            background: url('worldmap.jpeg') no-repeat center;
+            background-size: contain;
+        }
+
+        .country-marker {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: #FF6347;
+            border: 1px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+        }
+
+        #info-panel {
+        position: fixed;
+        top: -100%; /* Панель скрыта за верхней границей экрана */
+        left: 0;
+        width: 100%; /* Панель занимает всю ширину экрана */
+        height: 100%; /* Высота панели */
+        background-color: rgba(0, 0, 0, 0.9); /* Тёмный фон */
+        color: #fff;
+        padding: 20px;
+        transition: top 0.4s ease; /* Плавный выезд сверху */
+        z-index: 20;
+        display: flex;
+        flex-direction: column; /* Основная ось направлена сверху вниз */
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        }
+
+        #info-panel.visible {
+            top: 0; /* Панель становится видимой */
+        }
+
+        #country-name {
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .country-info {
+            display: flex; /* Горизонтальное размещение текста и картинки */
+            align-items: center; /* Выравнивание по вертикали */
+            gap: 30px; /* Расстояние между текстом и картинкой */
+            justify-content: center; /* Центрирование содержимого */
+            max-width: 900px;
+            text-align: left; /* Выравнивание текста */
+            flex-direction: row-reverse; /* Картинка справа от текста */
+        }
+
+        #country-photo {
+            width: 400px; /* Ширина изображения */
+            height: auto; /* Сохраняем пропорции */
+            border-radius: 10px; /* Сглаживаем края изображения */
+        }
+
+        #country-description {
+            font-size: 20px;
+            max-width: 600px; /* Ограничиваем ширину текста */
+        }
+
+        #country-list-panel {
+        position: fixed;
+        top: 0;
+        left: -33.33%; /* Панель скрыта за экраном слева */
+        width: 33.33%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        color: #fff;
+        padding: 20px;
+        overflow-y: auto;
+        transition: left 0.3s ease; /* Плавный выезд слева */
+        display: flex;
+        flex-direction: column;
+        font-size: 18px;
+        z-index: 10;
+        }
+
+        #country-list-panel.visible {
+            left: 0; /* Показываем панель */
+        }
+
+
+        #note-icon {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 70px;
+            height: 70px;
+            cursor: pointer;
+            z-index: 30;
+            transition: transform 0.2s, opacity 0.4s ease;
+            opacity: 0.7;
+            background: transparent;
+            border: none;
+        }
+
+        #note-icon:hover {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+
+        #note-icon.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #country-list-panel p {
+            cursor: pointer;
+            user-select: none;
+            margin: 10px 0;
+            transition: transform 0.2s ease;
+        }
+
+        #country-list-panel p:hover {
+            transform: scale(1.1);
+            color: #FF6347;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Карта -->
+    <div id="map" onclick="closeInfoPanel()">
+        <!-- Маркер для Великобритании -->
+        <div class="country-marker" style="top: 30%; left: 46%;" onclick="showCountryInfo(event, 'Великобритания', 'Шотландская волынка является символом Великобритании, особенно популярной в Шотландии. Это духовой инструмент с мехом и трубками, который используется для исполнения как народной музыки, так и маршей. Волынка часто сопровождает торжественные мероприятия, шествия и фестивали.', 'uk.jpeg')"></div>
+        <div class="country-marker" style="top: 33.5%; left: 50.5%;" onclick="showCountryInfo(event, 'Австрия','Для Австрии главным народным инструментом является цитра. Этот струнный инструмент особенно популярен в альпийских регионах страны и имеет яркое, мелодичное звучание. Цитра используется для исполнения традиционных австрийских танцев, песен и даже в классической музыке. Её звук ассоциируется с горной культурой и уютной атмосферой альпийских деревень.', 'at.jpeg')"></div>
+        <div class="country-marker" style="top: 18%; left: 68%;" onclick="showCountryInfo(event, 'Россия', 'Русская балалайка — национальный символ и важный элемент музыкальной культуры России. Инструмент имеет треугольный корпус и три струны. Она звучит в народных песнях, танцах и ансамблях, а также используется в современном искусстве.', 'russa.jpeg')"></div>
+        <div class="country-marker" style="top: 32%; left: 55%;" onclick="showCountryInfo(event, 'Украина', 'Бандура — это символ украинской музыки, который сочетает черты лютни и арфы. Она имеет множество струн и издаёт нежные и мелодичные звуки. Инструмент используют как сольный, так и в ансамблях, он часто ассоциируется с кобзарями.', 'ua.jpeg')"></div>
+        <div class="country-marker" style="top: 36%; left: 85.7%;" onclick="showCountryInfo(event, 'Япония', 'Кото — японский щипковый инструмент с 13 струнами, изготовленный из дерева павлонии. Его мягкое и мелодичное звучание ассоциируется с природой и традиционной японской культурой. Кото используется для исполнения как классической, так и современной музыки.', 'ja.jpeg')"></div>
+        <div class="country-marker" style="top: 36%; left: 64%;" onclick="showCountryInfo(event, 'Узбекистан', 'Дутар — это двухструнный щипковый инструмент, используемый в Узбекистане и соседних регионах. Его мягкий и выразительный звук делает его ключевым элементом местной музыкальной традиции. На дутаре играют как в сольных, так и в ансамблевых композициях.', 'uz.jpeg')"></div>
+        <div class="country-marker" style="top: 46%; left: 16%;" onclick="showCountryInfo(event, 'Мексика', 'Мариачи-гитара — основной инструмент традиционной мексиканской музыки мариачи. Она отличается глубоким звучанием и большим корпусом. Гитара идеально дополняет вокальные исполнения и является неотъемлемой частью национальных праздников.', 'me.jpeg')"></div>
+        <div class="country-marker" style="top: 92%; left: 96%;" onclick="showCountryInfo(event, 'Новая Зеландия', 'Традиционная флейта Путораино используется маори для медитативной музыки и обрядов. Этот инструмент, сделанный из дерева, создаёт мелодичные и мягкие звуки. Путораино отражает связь маори с природой и духовными традициями.', 'nz.jpeg')"></div>
+        <div class="country-marker" style="top: 37%; left: 50%;" onclick="showCountryInfo(event, 'Италия', 'Итальянская мандолина является символом музыкальной культуры страны. Она имеет овальный корпус, четыре пары струн и издаёт звонкие, мелодичные звуки. Мандолина используется как в классической музыке, так и в народной традиции, особенно на юге Италии.', 'it.png')"></div>
+        <div class="country-marker" style="top: 39.5%; left: 52.7%;" onclick="showCountryInfo(event, 'Греция', 'Бузуки — традиционный греческий инструмент, напоминающий лютню, с длинным грифом и металлическими струнами. Он используется в народной музыке ребетика и современных произведениях. Бузуки символизирует музыкальную культуру Греции и её мелодическую уникальность.', 'gr.jpeg')"></div>
+        <div class="country-marker" style="top: 50.50%; left: 25.8%;" onclick="showCountryInfo(event, 'Куба', 'Кубинская маримба является важной частью традиционной музыки Кубы. Этот ударный инструмент из дерева и металла создаёт ритмичные и яркие звуки. Маримба используется в танцевальной музыке, включая сальсу и румбу.', 'ku.jpeg')"></div>
+        <div class="country-marker" style="top: 39%; left: 75%;" onclick="showCountryInfo(event, 'Китай', 'Гуцинь — китайский струнный инструмент, известный более 3000 лет. Его спокойное звучание ассоциируется с философией и гармонией. Гуцинь используется для медитации, классической музыки и исполнения древних мелодий.', 'ch.jpeg')"></div>
+        <div class="country-marker" style="top: 37%; left: 19%;" onclick="showCountryInfo(event, 'США', 'Банджо — струнный инструмент, родом из США, ставший символом американской фолк-музыки. Его яркий, ритмичный звук используется в блюграссе, кантри и народных песнях.', 'usa.jpeg')"></div>
+        <div class="country-marker" style="top: 20%; left: 20%;" onclick="showCountryInfo(event, 'Канада', 'Деревянные флейты, используемые коренными народами Канады, создают атмосферные звуки, отражающие природу. Эти инструменты играют важную роль в обрядах и культурных традициях.', 'ca.jpeg')"></div>
+        <div class="country-marker" style="top: 39%; left: 56%;" onclick="showCountryInfo(event, 'Турция', 'Турецкий саз, или баглама, — это струнный инструмент с длинным грифом. Он используется в народной и классической музыке Турции, создавая мелодии с богатым восточным колоритом.', 'tu.jpeg')"></div>
+        <div class="country-marker" style="top: 42%; left: 62%;" onclick="showCountryInfo(event, 'Иран', 'Тар — это струнный щипковый инструмент, используемый в Иране. Его мягкое и глубокое звучание идеально подходит для исполнения традиционной персидской музыки.', 'ir.jpeg')"></div>
+        <div class="country-marker" style="top: 67%; left: 32%;" onclick="showCountryInfo(event, 'Бразилия', 'Кавакиньо — маленький струнный инструмент, используемый в Бразилии. Его звонкий звук делает его ключевым элементом самбы и босса-новы.', 'br.jpeg')"></div>
+        <div class="country-marker" style="top: 26%; left: 50%;" onclick="showCountryInfo(event, 'Швеция', 'Никельхарпа — это струнный инструмент с клавишами, популярный в Швеции. Её звучание уникально и используется для исполнения традиционных скандинавских мелодий.', 'sw.jpeg')"></div>
+        <div class="country-marker" style="top: 31%; left: 74%;" onclick="showCountryInfo(event, 'Монголия', 'Моринхуур — это двуструнный инструмент с фигурой конской головы на грифе. Его глубокое и мягкое звучание используется в горловом пении и монгольских эпосах.', 'mo.jpeg')"></div>
+        <div class="country-marker" style="top: 37.8%; left: 59.8%;" onclick="showCountryInfo(event, 'Армения', 'Дудук — это армянский духовой инструмент, изготовленный из абрикосового дерева. Его мягкое звучание ассоциируется с меланхолией и используется в народной музыке и современных композициях.', 'am.jpeg')"></div>
+
+        
+        <!--Сюда можно добавить страны!!!!!!!-->
+    </div>
+
+    <!-- Информационная панель -->
+    <div id="info-panel" onclick="closeInfoPanel()">    
+        <h2 id="country-name">Название страны</h2> <!-- Заголовок сверху -->
+        <div class="country-info">
+            <img id="country-photo" src="" alt="Фото страны">
+            <div>
+                <p id="country-description">Описание страны</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Панель с перечнем стран -->
+    <div id="country-list-panel" onclick="event.stopPropagation()">
+        <h1>Перечень стран:</h1>
+        <p onclick="showCountryInfoFromList(event, 'Великобритания', 'Шотландская волынка является символом Великобритании, особенно популярной в Шотландии. Это духовой инструмент с мехом и трубками, который используется для исполнения как народной музыки, так и маршей. Волынка часто сопровождает торжественные мероприятия, шествия и фестивали.', 'uk.jpeg')">Великобритания</p>
+        <p onclick="showCountryInfoFromList(event, 'Австрия', 'Для Австрии главным народным инструментом является цитра. Этот струнный инструмент особенно популярен в альпийских регионах страны и имеет яркое, мелодичное звучание. Цитра используется для исполнения традиционных австрийских танцев, песен и даже в классической музыке. Её звук ассоциируется с горной культурой и уютной атмосферой альпийских деревень.','at.jpeg')">Австрия</p>
+        <p onclick="showCountryInfoFromList(event, 'Россия', 'Русская балалайка — национальный символ и важный элемент музыкальной культуры России. Инструмент имеет треугольный корпус и три струны. Она звучит в народных песнях, танцах и ансамблях, а также используется в современном искусстве.', 'russa.jpeg')">Россия</p>
+        <p onclick="showCountryInfoFromList(event, 'Украина', 'Бандура — это символ украинской музыки, который сочетает черты лютни и арфы. Она имеет множество струн и издаёт нежные и мелодичные звуки. Инструмент используют как сольный, так и в ансамблях, он часто ассоциируется с кобзарями.', 'ua.jpeg')">Украина</p>
+        <p onclick="showCountryInfoFromList(event, 'Япония', 'Кото — японский щипковый инструмент с 13 струнами, изготовленный из дерева павлонии. Его мягкое и мелодичное звучание ассоциируется с природой и традиционной японской культурой. Кото используется для исполнения как классической, так и современной музыки.', 'ja.jpeg')">Япония</p>
+        <p onclick="showCountryInfoFromList(event, 'Узбекистан', 'Дутар — это двухструнный щипковый инструмент, используемый в Узбекистане и соседних регионах. Его мягкий и выразительный звук делает его ключевым элементом местной музыкальной традиции. На дутаре играют как в сольных, так и в ансамблевых композициях.', 'uz.jpeg')">Узбекистан</p>
+        <p onclick="showCountryInfoFromList(event, 'Мексика', 'Мариачи-гитара — основной инструмент традиционной мексиканской музыки мариачи. Она отличается глубоким звучанием и большим корпусом. Гитара идеально дополняет вокальные исполнения и является неотъемлемой частью национальных праздников.', 'me.jpeg')">Мексика</p>
+        <p onclick="showCountryInfoFromList(event, 'Новая Зеландия', 'Традиционная флейта Путораино используется маори для медитативной музыки и обрядов. Этот инструмент, сделанный из дерева, создаёт мелодичные и мягкие звуки. Путораино отражает связь маори с природой и духовными традициями.', 'nz.jpeg')">Новая Зеландия</p>
+        <p onclick="showCountryInfoFromList(event, 'Италия', 'Итальянская мандолина является символом музыкальной культуры страны. Она имеет овальный корпус, четыре пары струн и издаёт звонкие, мелодичные звуки. Мандолина используется как в классической музыке, так и в народной традиции, особенно на юге Италии.', 'it.png')">Италия</p>
+        <p onclick="showCountryInfoFromList(event, 'Греция', 'Бузуки — традиционный греческий инструмент, напоминающий лютню, с длинным грифом и металлическими струнами. Он используется в народной музыке ребетика и современных произведениях. Бузуки символизирует музыкальную культуру Греции и её мелодическую уникальность.', 'gr.jpeg')">Греция</p>
+        <p onclick="showCountryInfoFromList(event, 'Куба', 'Кубинская маримба является важной частью традиционной музыки Кубы. Этот ударный инструмент из дерева и металла создаёт ритмичные и яркие звуки. Маримба используется в танцевальной музыке, включая сальсу и румбу.', 'ku.jpeg')">Куба</p>
+        <p onclick="showCountryInfoFromList(event, 'Китай', 'Гуцинь — китайский струнный инструмент, известный более 3000 лет. Его спокойное звучание ассоциируется с философией и гармонией. Гуцинь используется для медитации, классической музыки и исполнения древних мелодий.', 'ch.jpeg')">Китай</p>
+        <p onclick="showCountryInfoFromList(event, 'США', 'Банджо — струнный инструмент, родом из США, ставший символом американской фолк-музыки. Его яркий, ритмичный звук используется в блюграссе, кантри и народных песнях.', 'usa.jpeg')">США</p>
+        <p onclick="showCountryInfoFromList(event, 'Канада', 'Деревянные флейты, используемые коренными народами Канады, создают атмосферные звуки, отражающие природу. Эти инструменты играют важную роль в обрядах и культурных традициях.', 'ca.jpeg')">Канада</p>
+        <p onclick="showCountryInfoFromList(event, 'Турция', 'Турецкий саз, или баглама, — это струнный инструмент с длинным грифом. Он используется в народной и классической музыке Турции, создавая мелодии с богатым восточным колоритом.', 'tu.jpeg')">Турция</p>
+        <p onclick="showCountryInfoFromList(event, 'Иран', 'Тар — это струнный щипковый инструмент, используемый в Иране. Его мягкое и глубокое звучание идеально подходит для исполнения традиционной персидской музыки.', 'ir.jpeg')">Иран</p>
+        <p onclick="showCountryInfoFromList(event, 'Бразилия', 'Кавакиньо — маленький струнный инструмент, используемый в Бразилии. Его звонкий звук делает его ключевым элементом самбы и босса-новы.', 'br.jpeg')">Бразилия</p>
+        <p onclick="showCountryInfoFromList(event, 'Швеция', 'Никельхарпа — это струнный инструмент с клавишами, популярный в Швеции. Её звучание уникально и используется для исполнения традиционных скандинавских мелодий.', 'sw.jpeg')">Швеция</p>
+        <p onclick="showCountryInfoFromList(event, 'Монголия', 'Моринхуур — это двуструнный инструмент с фигурой конской головы на грифе. Его глубокое и мягкое звучание используется в горловом пении и монгольских эпосах.', 'mo.jpeg')">Монголия</p>
+        <p onclick="showCountryInfoFromList(event, 'Армения', 'Дудук — это армянский духовой инструмент, изготовленный из абрикосового дерева. Его мягкое звучание ассоциируется с меланхолией и используется в народной музыке и современных композициях.', 'am.jpeg')">Армения</p>
+    </div>
+
+        
+        <!-- Можно добавить другие страны !!!!!!-->
+    </div>
+
+    <!-- Кнопка "нота" -->
+    <img id="note-icon" src="note.png" alt="Note Icon">
+
+    <script>
+        // Функция для отображения информации о стране
+        function showCountryInfo(event, name, description, imagePath) {
+        event.stopPropagation(); // Останавливаем всплытие события
+        const infoPanel = document.getElementById('info-panel');
+        document.getElementById('country-name').innerText = name; // Устанавливаем название страны
+        document.getElementById('country-description').innerText = description; // Устанавливаем описание
+        document.getElementById('country-photo').src = imagePath; // Устанавливаем изображение
+        infoPanel.classList.add('visible'); // Показываем панель
+        }
+
+
+        // Функция для закрытия информационной панели
+        function closeInfoPanel() {
+            document.getElementById('info-panel').classList.remove('visible'); // Скрываем панель
+        }
+
+
+        // Открытие/закрытие панели стран
+        function toggleCountryListPanel() {
+            const panel = document.getElementById('country-list-panel');
+            const noteIcon = document.getElementById('note-icon');
+
+            if (panel.classList.contains('visible')) {
+                panel.classList.remove('visible');
+                noteIcon.classList.remove('hidden');
+            } else {
+                panel.classList.add('visible');
+                noteIcon.classList.add('hidden');
+            }
+        }
+
+        // Обработчик для кнопки "нота"
+        document.getElementById('note-icon').addEventListener('click', function (event) {
+            event.stopPropagation();
+            toggleCountryListPanel();
+        });
+
+        // Закрытие панели при клике вне неё
+        document.addEventListener('click', function (event) {
+            const panel = document.getElementById('country-list-panel');
+            const noteIcon = document.getElementById('note-icon');
+
+            if (!panel.contains(event.target) && event.target !== noteIcon) {
+                panel.classList.remove('visible');
+                noteIcon.classList.remove('hidden');
+            }
+        });
+
+        // Отключение закрытия панели при клике внутри неё
+        document.getElementById('country-list-panel').addEventListener('click', function (event) {
+            event.stopPropagation();
+        });
+
+        // Показ информации о стране из панели стран
+        function showCountryInfoFromList(event, name, description, imagePath) {
+        event.stopPropagation(); // Останавливаем всплытие события
+        showCountryInfo(event, name, description, imagePath); // Передаём путь к изображению
+        document.getElementById('country-list-panel').classList.remove('visible'); // Закрываем панель
+        document.getElementById('note-icon').classList.remove('hidden'); // Показываем кнопку
+        }
+
+    </script>
+</body>
+</html>
